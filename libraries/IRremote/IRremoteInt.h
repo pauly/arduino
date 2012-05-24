@@ -12,7 +12,7 @@
 #ifndef IRremoteint_h
 #define IRremoteint_h
 
-#include <WProgram.h>
+#include <Arduino.h>
 
 #define CLKFUDGE 5      // fudge factor for clock interrupt overhead
 #define CLK 256      // max value for clock (timer 2)
