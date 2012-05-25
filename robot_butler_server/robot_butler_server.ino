@@ -1,5 +1,4 @@
 #include <IRremote.h>
-
 #include <SPI.h>
 #include <Ethernet.h>
 
@@ -7,9 +6,12 @@
 #define GREEN 10
 #define WHITE 11
 #define YELLOW 12
-#define RED 13
+#define RED 3
 #define BUTTON 7
 #define THERMOMETER A0
+
+// Up to 1023 + a null
+#define PIN_VAL_MAX_LEN 5
 
 int status = 0;
 int v = 0;
@@ -17,7 +19,6 @@ int previous = 0;
 
 #define STRING_BUFFER_SIZE 128
 typedef char BUFFER[STRING_BUFFER_SIZE];
-BUFFER buffer;
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -32,6 +33,7 @@ EthernetServer server( 80 );
 void setup( ) {
   Serial.begin( 9600 );
   pinMode( RED, OUTPUT );
+  // test( RED );
   pinMode( YELLOW, OUTPUT );
   pinMode( WHITE, OUTPUT );
   pinMode( GREEN, OUTPUT );
@@ -47,109 +49,111 @@ void loop( ) {
   // thermo_light(  );
   // light_switch( BUTTON, RED );
   my_server( );
+  // if ( Serial.read( ) != -1 ) {
+  //  send_ir( );
+  // }
+  // delay( 3000 );
+}
+
+void send_ir ( ) {
+  IRsend irsend;
+  Serial.println( "sending another ir" );
+  for ( int i = 0; i < 3; i ++ ) {
+    Serial.println( "go" );
+    irsend.sendSony( 0xa90, 12 ); // Sony TV power code, just an example from http://www.arcfn.com/2009/08/multi-protocol-infrared-remote-library.html
+    delay( 100 );
+  }
+}
+
+void test ( int pin ) {
+  Serial.print( "Testing pin" ); 
+  Serial.println( pin ); 
+  for ( int i = 0; i < 3; i ++ ) {
+    digitalWrite( pin, HIGH );
+    delay( 100 );
+    digitalWrite( pin, LOW );
+  }
 }
 
 void my_server ( ) {
   // listen for incoming clients
   EthernetClient client = server.available();
   if ( client ) {
-    Serial.println("new client");
+    Serial.println( "new client" );
     if ( client.connected( ) && client.available( )) {
-      String method;
-      String path;
-      if ( get_request( client, method, path )) {
-        call_route( method, path );
+      char *method = "";
+      char *path = "";
+      char *response = "";
+      char *data = "";
+      if ( get_request( client, method, path, data )) {
+        call_route( method, path, data, response );
       }
       client.print( json_header( ));
-      client.print( json_response( ));
+      client.print( json_response( response ));
       Serial.println( "response sent" );
     }
-    // give the web browser time to receive the data
-    delay(1);
-    // close the connection:
-    client.stop();
+    delay( 1 ); // give the web browser time to receive the data
+    client.stop(); // close the connection:
     Serial.println( "client disconnected" );
   }
 }
 
-char *call_route ( String method, String path ) {
-  Serial.println( "Method was " + method );
+boolean call_route ( char *method, char *path, char *data, char * & response ) {
+  char *pin;
+  pin = strtok( path, "/" );
+  // Serial.print( "We want pin " );
+  // Serial.println( pin );
+  send_ir( ); // don't care what the data was just send ir for now
+  sprintf( response, "{\"method\": \"%s\", \"path\": \"%s\", \"pin_a\": \"%s\", \"pin_d\": %d}", method, path, pin, pin );
+  // Serial.println( response );
+  return true;
 }
 
 char *json_header ( ) {
   return "HTTP/1.1 %s\nContent-Type: application/json\nConnnection: close\n\n";
 }
 
-char *json_response ( ) {
-  char *s = "{\"a\":{";
+char *json_response ( char *response ) {
+  BUFFER s = "{\"a\":{";
   /* for ( int ac = 0; ac < 6; ac ++ ) {
-    if ( ac ) s += ",";
-    sprintf( s, "%s{\"%d\":%d}", s, ac, analogRead( ac ));
+    if ( ac ) strcat( s, "," );
+    strcat( s, json_pair( 1, analogRead( 1 )));
   } */
-  sprintf( s, "},\"d\":%s{\"%d\":%d}}", s, BUTTON, digitalRead( BUTTON ));
+  strcat( s, "},\"d\":{\"" );
+  strcat( s, json_pair( BUTTON, digitalRead( BUTTON )));
+  strcat( s, "}" );
+  
+  strcat( s, ",\"r\":" );
+  strcat( s, response );
+  strcat( s, "" );
+  
+  strcat( s, "}" );
   return s;
 }
 
-int get_request ( EthernetClient client, String & method, String & path ) {
-  String s;
-  s += client.read();
-  s += client.read();
-  int i = 2;
-  int space = 0;
-  Serial.print( "Getting request, s[0] and s[1] are" );
-  Serial.println( s.substring( 0, 2 ));
-  if ( s.substring( 0, 1 ) == "\r" ) {
-    Serial.println( 'first char is a \r to start' );
-  }
-  // while ( s[i-2] != '\r' && s[i-1] != '\n' && i < STRING_BUFFER_SIZE ) {
-  while ( s.substring( i - 2, i - 1 ) != "\r" && s.substring( i - 1, i ) != "\n" && i < STRING_BUFFER_SIZE ) {
-    char c = client.read();
-    if ( c == ' ' ) {
-      if ( space == 0 ) {
-        method = s;
-      }
-      if ( space == 1 ) {
-        /* for ( int j = method.length( ); j < i; j ++ ) {
-          path += s[j];
-        } */
-        path = s.substring( method.length( ));
-      } 
-      space ++;
-    }
-    s[i] = c;
-    i ++;
-  }
-  Serial.print( "request(), buffer was " );
-  Serial.println( s );
-  Serial.print( "s.length is " );
-  Serial.println( s.length( ));
-  return 1;
+char *json_pair ( int k, int v ) {
+  BUFFER s = "";
+  char vs[PIN_VAL_MAX_LEN];
+  sprintf( vs, "%d", k );
+  strcat( s, vs );
+  strcat( s, "\":" );
+  sprintf( vs, "%d", v );
+  strcat( s, vs );
+  return s;
 }
 
-int get_request2 ( EthernetClient client, String & method, String & path ) {
+boolean get_request ( EthernetClient client, char * & method, char * & path, char * & data ) {
   char s[STRING_BUFFER_SIZE];
   s[0] = client.read();
   s[1] = client.read();
   int i = 2;
-  int space = 0;
   while ( s[i-2] != '\r' && s[i-1] != '\n' && i < STRING_BUFFER_SIZE ) {
-    char c = client.read();
-    if ( c == ' ' ) {
-      if ( space == 0 ) {
-        method = s;
-      }
-      if ( space == 1 ) {
-        // need to substr s somehow...
-        // path = s.substring( method.length( ));
-      } 
-      space = space + 1;
-    }
-    s[i] = c;
-    i ++;
+    s[i ++] = client.read();
   }
-  Serial.print( "request(), buffer was " );
-  Serial.println( s );
-  return 1;
+  method = strtok( s, " \n\r" );
+  path = strtok( NULL, " \n\r?" );
+  data = strtok( NULL, " ?" );
+  return true;
 }
 
 void thermo_light( ) {
