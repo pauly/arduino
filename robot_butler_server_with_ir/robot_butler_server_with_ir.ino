@@ -2,12 +2,13 @@
  * Control my "robot butler"
  * Accepts commands over http and passes them on to devices.
  * LOTS of unused code in here, a work in progress!
- * Features experiments in temperature and lightwaverf
+ * Features experiments in infrared, temperature, and lightwaverf
  * 
  * @author PC <paulypopex+arduino@gmail.com>
  * @date    Mon Sun  6 22:50:43 GMT 2013 
  */ 
 
+#include <IRremote.h>
 #include <SPI.h>
 #include <Ethernet.h>
 #include <EthernetUdp.h>
@@ -37,7 +38,7 @@ typedef char BUFFER[STRING_BUFFER_SIZE];
 byte mac[] = { 0x64, 0xA7, 0x69, 0x0D, 0x21, 0x21 }; // mac address of this arduino
 IPAddress ip( 192, 168, 0, 101 ); // requested ip address of this arduino
 
-EthernetServer server( 666 ); // Initialize the Ethernet server library
+EthernetServer server( 80 ); // Initialize the Ethernet server library
 
 void setup( ) {
   Serial.begin( 9600 );
@@ -57,8 +58,23 @@ void setup( ) {
 
 void loop( ) {
   // thermo_light(  );
+  // light_switch( BUTTON, RED );
   my_server( );
+  // if ( Serial.read( ) != -1 ) {
+  //  send_ir( );
+  // }
+  // delay( 3000 );
 }
+
+// void send_ir ( ) {
+//  IRsend irsend;
+//  Serial.println( "sending another ir" );
+//  for ( int i = 0; i < 3; i ++ ) {
+//    Serial.println( "go" );
+//    irsend.sendSony( 0xa90, 12 ); // Sony TV power code, just an example from http://www.arcfn.com/2009/08/multi-protocol-infrared-remote-library.html
+//    delay( 100 );
+//  }
+// }
 
 void test ( int pin ) {
   Serial.print( "Testing pin" ); 
@@ -77,50 +93,53 @@ void my_server ( ) {
     if ( client.connected( ) && client.available( )) {
       char *method = "";
       char *path = "";
-      char *response;
+      char *response = "ok";
       char *data = "";
       if ( get_request( client, method, path, data )) {
         response = call_route( method, path, data );
-        Serial.println( response );
       }
       client.print( json_header( "200 OK" ));
       client.print( json_response( response ));
+      // Serial.println( "response sent" );
     }
     delay( 1 ); // give the web browser time to receive the data
     client.stop(); // close the connection:
+    // Serial.println( "client disconnected" );
   }
 }
 
-char *call_route ( char * method, char * path, char * data ) {
+char *call_route ( char *method, char *path, char *data ) {
   Serial.print( "Path was " );
   Serial.println( path );
-  char * room = strtok( path, "/" );
-  char * device = strtok( NULL, "/" ); // strotok is mental
-  char * f = strtok( NULL, "/" );
-  char cmd[32]; // enough room for whole instruction
-  cmd[0] = 0; // null string
-  strcat( cmd, "666,!" );
-  strcat( cmd, "R" );
-  strcat( cmd, room );
-  strcat( cmd, "D" );
-  strcat( cmd, device );
-  strcat( cmd, "F" );
-  strcat( cmd, f );
-  strcat( cmd, "|testing|arduino!" );
+  char *resource = strtok( path, "/" );
+  Serial.print( "We want resource " );
+  Serial.println( resource );
+  char *s = "666,!R2D1F1|dining on|arduino!";
+  // strcat( s, "{\"resource\":\"" );
+  // strcat( s, "\"}" );
+  // sprintf( response, "{\"method\": \"%s\", \"path\": \"%s\", \"pin_a\": \"%s\"}", method, path, pin );
+  // Serial.print( "<response>" );
+  // Serial.print( response );
+  // Serial.print( "</response>" );
+  
   Udp.beginPacket( lwrfServer, lwrfPort );
-  Udp.write( cmd );
+  Udp.write( s );
   Udp.endPacket( );
-  return cmd;
-}
 
-char *json_header ( char *status ) {
-  BUFFER s = "HTTP/1.1 ";
-  strcat( s, status );
-  strcat( s, "\nContent-Type: application/json\nConnnection: close\n\n" );
   return s;
 }
 
-char *json_response ( char * response ) {
+char *json_header ( char *status ) {
+  // Serial.print( "<json_header>" );
+  BUFFER s = "HTTP/1.1 ";
+  strcat( s, status );
+  strcat( s, "\nContent-Type: application/json\nConnnection: close\n\n" );
+  // Serial.print( "</json_header>" );
+  return s;
+}
+
+char *json_response ( char *response ) {
+  // Serial.print( "<json_response>" );
   BUFFER s = "{\"a\":{";
   for ( int analog_pin = 0; analog_pin < 6; analog_pin ++ ) {
     if ( analog_pin > 0 ) strcat( s, "," );
@@ -138,6 +157,7 @@ char *json_response ( char * response ) {
   // strcat( s, ",\"about\":\"x\"" );
   
   strcat( s, "}" );
+  // Serial.print( "</json_response>" );
   return s;
 }
 
@@ -178,4 +198,23 @@ void thermo_light( ) {
   digitalWrite( YELLOW, ( v >= 17 && v <= 21 ));
   digitalWrite( RED, ( v >= 21 ));
   delay( 1000 );
+}
+
+void light_switch ( int pin, int led ) {
+  v = digitalRead( pin );
+  if (( v == HIGH ) && ( previous == LOW )) {
+    Serial.print( pin );
+    Serial.print( ':' );
+    Serial.print( v );
+    Serial.println( '.' );
+    status = 1 - status;
+    delay( 10 );
+  }
+  previous = v;
+  if ( status == 1 ) {
+    digitalWrite( led, HIGH );
+  }
+  else {
+    digitalWrite( led, LOW );
+  }
 }

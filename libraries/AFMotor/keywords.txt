@@ -1,37 +1,35 @@
 #######################################
-# Syntax Coloring Map For IRremote
+# Syntax Coloring Map for AFMotor
 #######################################
 
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
 
-decode_results KEYWORD1
-IRrecv KEYWORD1
-IRsend KEYWORD1
+AF_DCMotor	KEYWORD1
+AF_Stepper	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-blink13 KEYWORD2
-decode KEYWORD2
-enableIRIn KEYWORD2
-resume KEYWORD2
-enableIROut KEYWORD2
-sendNEC KEYWORD2
-sendSony KEYWORD2
-sendRaw KEYWORD2
-sendRC5 KEYWORD2
-sendRC6 KEYWORD2
-#
+enable	KEYWORD2
+run	KEYWORD2
+setSpeed	KEYWORD2
+step	KEYWORD2
+onestep	KEYWORD2
+release	KEYWORD2
+
 #######################################
 # Constants (LITERAL1)
 #######################################
 
-NEC LITERAL1
-SONY LITERAL1
-RC5 LITERAL1
-RC6 LITERAL1
-UNKNOWN LITERAL1
-REPEAT LITERAL1
+MICROSTEPPING	LITERAL1
+FORWARD	LITERAL1
+BACKWARD	LITERAL1
+BRAKE	LITERAL1
+RELEASE	LITERAL1
+SINGLE	LITERAL1
+DOUBLE	LITERAL1
+INTERLEAVE	LITERAL1
+MICROSTEP	LITERAL1
