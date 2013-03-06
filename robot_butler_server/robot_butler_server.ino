@@ -22,6 +22,7 @@
 
 // Up to 1023 + a null
 #define PIN_VAL_MAX_LEN 5
+#define PORT 666
 
 unsigned int status = 0;
 unsigned int v = 0;
@@ -35,9 +36,10 @@ EthernetUDP Udp; // An EthernetUDP instance to let us send and receive packets o
 typedef char BUFFER[STRING_BUFFER_SIZE];
 
 byte mac[] = { 0x64, 0xA7, 0x69, 0x0D, 0x21, 0x21 }; // mac address of this arduino
-IPAddress ip( 192, 168, 0, 101 ); // requested ip address of this arduino
+IPAddress ip( 192, 168, 1, 101 ); // requested ip address of this arduino
 
-EthernetServer server( 666 ); // Initialize the Ethernet server library
+EthernetServer server( PORT ); // Initialize the json server on this port
+EthernetServer webserver( 80 ); // Initialize the web server on this port
 
 void setup( ) {
   Serial.begin( 9600 );
@@ -52,12 +54,18 @@ void setup( ) {
   Udp.begin( localPort );
   server.begin();
   Serial.print( "server is at " );
+  Serial.print( Ethernet.localIP( ));
+  Serial.print( ":" );
+  Serial.print( PORT );
+  webserver.begin();
+  Serial.print( "web server is also at " );
   Serial.println( Ethernet.localIP( ));
 }
 
 void loop( ) {
   // thermo_light(  );
   my_server( );
+  my_web_server( );
 }
 
 void test ( int pin ) {
@@ -85,6 +93,22 @@ void my_server ( ) {
       }
       client.print( json_header( "200 OK" ));
       client.print( json_response( response ));
+    }
+    delay( 1 ); // give the web browser time to receive the data
+    client.stop(); // close the connection:
+  }
+}
+
+void my_web_server ( ) {
+  Serial.println( "Path was " );
+  EthernetClient client = webserver.available();  // listen for incoming clients
+  if ( client ) {
+    Serial.println( "new client for web server" );
+    if ( client.connected( ) && client.available( )) {
+      client.print( "HTTP/1.1 200\nContent-Type: text/html\nConnnection: close\n\n" );
+      client.print( "<html><title>Arduino!</title><body><h1>Arduino here!</h1><p>Server is on :" );
+      client.print( PORT );
+      client.print( "remember...</p></body></html>" );
     }
     delay( 1 ); // give the web browser time to receive the data
     client.stop(); // close the connection:
