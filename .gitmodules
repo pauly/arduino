@@ -1,3 +1,6 @@
 [submodule "robot-butler"]
 	path = robot-butler
 	url = git://github.com/pauly/robot-butler
+[submodule "robot_butler_server"]
+	path = robot_butler_server
+	url = git://github.com/pauly/robot_butler_server
