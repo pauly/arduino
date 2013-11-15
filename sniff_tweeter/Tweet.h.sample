@@ -1,0 +1,4 @@
+const static char consumer_secret[43] PROGMEM = "";
+const static char access_token_secret[46] PROGMEM = "";
+const static char consumer_key[ ] PROGMEM = "";
+const static char oauth_token[ ] PROGMEM = "";

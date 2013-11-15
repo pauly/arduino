@@ -1,0 +1,7 @@
+#define TWEET_H 1
+char tweetHost[20] = "www.clarkeology.com"; # host with twitter proxy on
+char tweetPath[11] = "/tweet.rb"; # path of twitter proxy
+char consumer_key[23] = ""; # twitter consumer key
+char consumer_secret[43] = "";
+char access_token[50] = "";
+char access_token_secret[46] = "";

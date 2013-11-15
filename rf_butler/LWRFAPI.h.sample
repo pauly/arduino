@@ -1,0 +1,7 @@
+#define LWRFAPI_H 1
+
+# see https://github.com/pauly/lightwaverf-api
+
+char apiHost[13] = "192.168.1.73";
+char apiPath[5] = "/log";
+char apiKey[25] = "1234567890123456789012==";
