@@ -1,5 +1,17 @@
 /**
- * Taken from http://apcmag.com/how-to-tweet-with-your-arduino.htm
+ * Uses https://github.com/roberttidey/LightwaveRF
+ * and maybe bits of https://github.com/lawrie/LightwaveRF
+ * 
+ * Arduino home automation experiments. Hardware:
+ *  Arduino http://amzn.to/UCKWsq
+ *  Ethernet shield http://amzn.to/1akfeTY
+ *  LightwaveRF kit: http://amzn.to/RkukDo and http://amzn.to/V7yPPK
+ *  RF transmitter and receiver http://bit.ly/HhltyI
+ *  Air quality meter from coolcomponents.co.uk
+ *
+ * Is receiving rf but not transmitting yet.
+ *
+ * Lots taken from http://apcmag.com/how-to-tweet-with-your-arduino.htm
  * 
  * @author PC <paul.clarke+paulclarke@holidayextras.com>
  * @date    Fri 15 Nov 2013 22:32:36 GMT
@@ -59,9 +71,23 @@ void loop ( ) {
     byte msg[len];
     lwrx_getmessage( msg, &len );
     char tweet[140] = "";
-    sprintf( tweet, "%x%x%x%x%x%x%x%x%x%x - %x%x%x%x%x set %x%x %x (%x%x) #arduino", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[2], msg[3], msg[0], msg[1] );
+    sprintf(
+      tweet,
+      "%x%x%x%x%x%x%x%x%x%x - %x%x%x%x%x set %x%x %x (%x%x) #arduino",
+      msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9],
+      msg[4], msg[5], msg[6], msg[7], msg[8],
+      msg[9], msg[2],
+      msg[3],
+      msg[0], msg[1]
+    );
     Serial.print( F( "Tweeting: " ));
     Serial.println( tweet );
+    if ( twitter.post_status( tweet )) {
+      Serial.println( F( "Updated" ));
+    }
+    else {
+      Serial.println( F( "failed" ));
+    }
     Serial.print( freeRam( ));
     Serial.println( F( " bytes free" ));
     delay( 500 );
@@ -88,12 +114,12 @@ void loop ( ) {
     if ( twitter.is_ready( )) {
       unsigned long now = twitter.get_time( );
       if ( now > last_tweet + TWEET_DELTA ) {
-        char msg[140];
-        sprintf( msg, "Smell; air: %d #arduino", smell );
+        char tweet[140];
+        sprintf( tweet, "Smell; air: %d #arduino", smell );
         Serial.print( F( "Tweeting: " ));
-        Serial.println( msg );
+        Serial.println( tweet );
         last_tweet = now;
-        if ( twitter.post_status( msg )) {
+        if ( twitter.post_status( tweet )) {
           Serial.println( F( "Updated" ));
         }
         else {
